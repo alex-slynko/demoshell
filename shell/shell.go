@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -9,11 +8,12 @@ import (
 	"strings"
 
 	basher "github.com/progrium/go-basher"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type LivePlayer struct {
 	Out     io.Writer
-	In      io.Reader
+	In      *os.File
 	stderrR *os.File
 	stderrW *os.File
 	outC    chan string
@@ -22,7 +22,6 @@ type LivePlayer struct {
 func (l *LivePlayer) Run(script []byte) error {
 	username := os.Getenv("USER")
 	lines := bytes.Split(script, []byte("\n"))
-	inReader := bufio.NewReader(l.In)
 	var command []byte
 	for _, line := range lines {
 		if lineIsEmpty(line) {
@@ -33,8 +32,13 @@ func (l *LivePlayer) Run(script []byte) error {
 		} else if bytes.HasPrefix(line, []byte("#")) {
 			l.Out.Write(bytes.TrimLeft(line, "#"))
 		} else {
-			l.Out.Write([]byte(fmt.Sprintf("%s $ %s\n", username, line)))
-			inReader.ReadString('\n')
+			if len(command) == 0 {
+				l.Out.Write([]byte(fmt.Sprintf("%s $ %s\n", username, line)))
+			} else {
+				l.Out.Write([]byte(fmt.Sprintf("> %s\n", line)))
+			}
+
+			l.waitForEnter()
 			command = append(command, line...)
 			command = append(command, []byte("\n")...)
 
@@ -143,4 +147,18 @@ func includesElement(slices []string, element string) bool {
 		}
 	}
 	return false
+}
+
+func (l *LivePlayer) waitForEnter() {
+	if terminal.IsTerminal(int(l.In.Fd())) {
+		state, _ := terminal.MakeRaw(int(l.In.Fd()))
+		defer terminal.Restore(int(l.In.Fd()), state)
+	}
+	for {
+		buf := make([]byte, 1)
+		l.In.Read(buf)
+		if buf[0] == 13 || buf[0] == 10 {
+			return
+		}
+	}
 }

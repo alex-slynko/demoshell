@@ -84,6 +84,16 @@ World"`))
 			Expect(output).To(ContainElement("Hello World"))
 		})
 
+		It("adds > to the multiline commands", func() {
+			stdinWritePipe.Write([]byte("\n"))
+			os.Setenv("USER", "testUser")
+			err := player.Run([]byte(`echo "Hello \
+World"`))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(gbytes.Say(`testUser \$ echo "Hello \\`))
+			Expect(out).To(gbytes.Say(`> World"`))
+		})
+
 		It("does export environment variables", func() {
 			os.Setenv("DEMOSHELL_TEST_VAR", "test_secret")
 			err := player.Run([]byte(`printenv DEMOSHELL_TEST_VAR`))
