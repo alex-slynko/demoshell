@@ -47,4 +47,36 @@ var _ = Describe("Main", func() {
 		Expect(session.Out).To(gbytes.Say(`demo.*\$ echo "Hello"`))
 	})
 
+	It("waits for user to type", func() {
+		command := exec.Command(pathToCLI, "fixtures/basic.session")
+		_, err := command.StdinPipe()
+		Expect(err).NotTo(HaveOccurred())
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Consistently(session).ShouldNot(gexec.Exit())
+		Expect(session.Err.Contents()).To(BeEmpty())
+	})
+
+	It("is interruptable by CTRL-C", func() {
+		command := exec.Command(pathToCLI, "fixtures/basic.session")
+		_, err := command.StdinPipe()
+		Expect(err).NotTo(HaveOccurred())
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Consistently(session).ShouldNot(gexec.Exit())
+		session.Interrupt()
+		Eventually(session).Should(gexec.Exit())
+	})
+
+	XIt("does not show symbols that person types", func() {
+		command := exec.Command(pathToCLI, "fixtures/basic.session")
+		inPipe, err := command.StdinPipe()
+		Expect(err).NotTo(HaveOccurred())
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		inPipe.Write([]byte("Should not appear\n"))
+		Eventually(session).Should(gexec.Exit(0))
+		Expect(session.Out).NotTo(gbytes.Say("appear"))
+	})
+
 })

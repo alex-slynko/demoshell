@@ -61,12 +61,6 @@ var _ = Describe("Shell", func() {
 			Expect(strings.Split(string(out.Contents()), "\n")).To(ContainElement("Hello"))
 		})
 
-		It("does output but do not run comments", func() {
-			err := player.Run([]byte(`#echo "Hello"`))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(out.Contents())).To(Equal(`echo "Hello"`))
-		})
-
 		It("allows to run multiple commands", func() {
 			stdinWritePipe.Write([]byte("\n"))
 			err := player.Run([]byte(`echo "Hello"
@@ -79,7 +73,23 @@ echo "World"`))
 			Expect(output).To(ContainElement("World"))
 		})
 
-		It("does respect multiline commands", func() {})
+		It("does respect multiline commands", func() {
+			stdinWritePipe.Write([]byte("\n"))
+			err := player.Run([]byte(`echo "Hello \
+World"`))
+			Expect(err).NotTo(HaveOccurred())
+			output := strings.Split(string(out.Contents()), "\n")
+			Expect(out).To(gbytes.Say(`echo "Hello \\`))
+			Expect(out).To(gbytes.Say(`World"`))
+			Expect(output).To(ContainElement("Hello World"))
+		})
+
+		It("does export environment variables", func() {
+			os.Setenv("DEMOSHELL_TEST_VAR", "test_secret")
+			err := player.Run([]byte(`printenv DEMOSHELL_TEST_VAR`))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(gbytes.Say(`test_secret`))
+		})
 
 		It("skips empty lines", func() {
 			ch := make(chan bool)
@@ -91,9 +101,52 @@ echo "World"`))
 			}()
 			Eventually(ch).Should(Receive())
 		})
+
+		It("keeps environment variables that are exported in the script", func() {
+			stdinWritePipe.Write([]byte("\n"))
+			err := player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="Hello World"
+echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))
+			Expect(err).NotTo(HaveOccurred())
+			output := strings.Split(string(out.Contents()), "\n")
+			Expect(output).To(ContainElement("Hello World"))
+		})
+
+		It("keeps number environment variable", func() {
+			stdinWritePipe.Write([]byte("\n"))
+			err := player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE=1
+echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))
+			Expect(err).NotTo(HaveOccurred())
+			output := strings.Split(string(out.Contents()), "\n")
+			Expect(output).To(ContainElement("1"))
+		})
+
+		//TODO: fix this
+		XIt("keeps environment variable in single quotes", func() {
+			stdinWritePipe.Write([]byte("\n"))
+			err := player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello World'"
+echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))
+			Expect(err).NotTo(HaveOccurred())
+			output := strings.Split(string(out.Contents()), "\n")
+			Expect(output).To(ContainElement("'Hello World'"))
+		})
 	})
 
-	It("is interruptable by ctrl-c", func() {
+	It("does not output shebang", func() {
+		err := player.Run([]byte(`#!echo "Hello"`))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(out.Contents())).To(BeEmpty())
+	})
+
+	It("does output but do not run comments", func() {
+		err := player.Run([]byte(`#echo "Hello"`))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(out.Contents())).To(Equal(`echo "Hello"`))
+	})
+
+	It("does not output doitlive comments", func() {
+		err := player.Run([]byte(`#doitlive speed=5`))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(out.Contents())).To(BeEmpty())
 	})
 
 	It("waits for enter to execute command", func() {
