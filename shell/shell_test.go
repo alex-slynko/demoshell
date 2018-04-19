@@ -52,7 +52,15 @@ var _ = Describe("Shell", func() {
 			os.Setenv("USER", "testUser")
 			err := player.Run([]byte(`echo "Hello"`))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(gbytes.Say(`testUser \$ echo "Hello"`))
+			Expect(out).To(gbytes.Say(`testUser.*\$ echo "Hello"`))
+		})
+
+		It("adds hostname to the output", func() {
+			os.Setenv("USER", "testUser")
+			err := player.Run([]byte(`echo "Hello"`))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(out.Contents()).To(ContainSubstring(os.Hostname()))
 		})
 
 		It("outputs command result", func() {
@@ -90,7 +98,7 @@ World"`))
 			err := player.Run([]byte(`echo "Hello \
 World"`))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(gbytes.Say(`testUser \$ echo "Hello \\`))
+			Expect(out).To(gbytes.Say(`testUser.*\$ echo "Hello \\`))
 			Expect(out).To(gbytes.Say(`> World"`))
 		})
 
@@ -139,6 +147,16 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))
 			output := strings.Split(string(out.Contents()), "\n")
 			Expect(output).To(ContainElement("'Hello World'"))
 		})
+
+		It("does output comments on seprate lines", func() {
+			err := player.Run([]byte(`#Test comment
+echo "Hello"`))
+			Expect(err).NotTo(HaveOccurred())
+			output := strings.Split(string(out.Contents()), "\n")
+			Expect(output).To(ContainElement("Test comment"))
+			Expect(output).To(ContainElement("Hello"))
+		})
+
 	})
 
 	It("does not output shebang", func() {
@@ -150,7 +168,8 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))
 	It("does output but do not run comments", func() {
 		err := player.Run([]byte(`#echo "Hello"`))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(out.Contents())).To(Equal(`echo "Hello"`))
+		Expect(string(out.Contents())).To(Equal(`echo "Hello"
+`))
 	})
 
 	It("does not output doitlive comments", func() {

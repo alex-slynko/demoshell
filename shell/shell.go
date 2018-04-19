@@ -21,6 +21,10 @@ type LivePlayer struct {
 
 func (l *LivePlayer) Run(script []byte) error {
 	username := os.Getenv("USER")
+	hostname, _ := os.Hostname()
+	dir, _ := os.Getwd()
+	home := os.Getenv("HOME")
+	dir = strings.Replace(dir, home, "~", 1)
 	lines := bytes.Split(script, []byte("\n"))
 	var command []byte
 	for _, line := range lines {
@@ -31,9 +35,10 @@ func (l *LivePlayer) Run(script []byte) error {
 		} else if bytes.HasPrefix(line, []byte("#!")) {
 		} else if bytes.HasPrefix(line, []byte("#")) {
 			l.Out.Write(bytes.TrimLeft(line, "#"))
+			l.Out.Write([]byte("\n"))
 		} else {
 			if len(command) == 0 {
-				l.Out.Write([]byte(fmt.Sprintf("%s $ %s\n", username, line)))
+				l.Out.Write([]byte(fmt.Sprintf("%s@%s:%s$ %s\n", username, hostname, dir, line)))
 			} else {
 				l.Out.Write([]byte(fmt.Sprintf("> %s\n", line)))
 			}
