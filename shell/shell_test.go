@@ -133,8 +133,7 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))
 			Expect(output).To(ContainElement("1"))
 		})
 
-		//TODO: fix this
-		XIt("keeps environment variable in single quotes", func() {
+		It("keeps environment variable in single quotes", func() {
 			stdinWritePipe.Write([]byte("\n"))
 			err := player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello World'"
 echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))

@@ -129,10 +129,11 @@ func (l *LivePlayer) updateEnvWithNew() {
 }
 
 func trimQuotes(quotedString string) string {
-	if strings.HasPrefix(quotedString, "'") {
+	if strings.HasPrefix(quotedString, `''\''`) {
+		last := len(quotedString) - 4
+		return quotedString[4:last]
+	} else if strings.HasPrefix(quotedString, "'") {
 		last := len(quotedString) - 1
-		fmt.Println(quotedString[1:last])
-		fmt.Println(quotedString)
 		return quotedString[1:last]
 	}
 	return quotedString

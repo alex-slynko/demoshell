@@ -68,7 +68,7 @@ var _ = Describe("Main", func() {
 		Eventually(session).Should(gexec.Exit())
 	})
 
-	XIt("does not show symbols that person types", func() {
+	It("does not show symbols that person types", func() {
 		command := exec.Command(pathToCLI, "fixtures/basic.session")
 		inPipe, err := command.StdinPipe()
 		Expect(err).NotTo(HaveOccurred())
