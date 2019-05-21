@@ -49,18 +49,10 @@ var _ = Describe("Shell", func() {
 		})
 
 		It("adds username to the output", func() {
-			os.Setenv("USER", "testUser")
+			os.Setenv("DEMOUSER", "testUser")
 			err := player.Run([]byte(`echo "Hello"`))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(gbytes.Say(`testUser.*\$ echo "Hello"`))
-		})
-
-		It("adds hostname to the output", func() {
-			os.Setenv("USER", "testUser")
-			err := player.Run([]byte(`echo "Hello"`))
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(out.Contents()).To(ContainSubstring(os.Hostname()))
 		})
 
 		It("outputs command result", func() {
@@ -94,7 +86,7 @@ World"`))
 
 		It("adds > to the multiline commands", func() {
 			stdinWritePipe.Write([]byte("\n"))
-			os.Setenv("USER", "testUser")
+			os.Setenv("DEMOUSER", "testUser")
 			err := player.Run([]byte(`echo "Hello \
 World"`))
 			Expect(err).NotTo(HaveOccurred())

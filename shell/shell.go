@@ -20,8 +20,10 @@ type LivePlayer struct {
 }
 
 func (l *LivePlayer) Run(script []byte) error {
-	username := os.Getenv("USER")
-	hostname, _ := os.Hostname()
+	username := os.Getenv("DEMOUSER")
+	if username == "" {
+		username = os.Getenv("USER")
+	}
 	dir, _ := os.Getwd()
 	home := os.Getenv("HOME")
 	dir = strings.Replace(dir, home, "~", 1)
@@ -38,7 +40,7 @@ func (l *LivePlayer) Run(script []byte) error {
 			l.Out.Write([]byte("\n"))
 		} else {
 			if len(command) == 0 {
-				l.Out.Write([]byte(fmt.Sprintf("%s@%s:%s$ %s\n", username, hostname, dir, line)))
+				l.Out.Write([]byte(fmt.Sprintf("%s:%s$ %s\n", username, dir, line)))
 			} else {
 				l.Out.Write([]byte(fmt.Sprintf("> %s\n", line)))
 			}
