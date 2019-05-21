@@ -17,7 +17,7 @@ var _ = Describe("Shell", func() {
 		out            *gbytes.Buffer
 		oldStdout      *os.File
 		player         *shell.LivePlayer
-		username       string
+		oldEnv         []string
 	)
 
 	BeforeEach(func() {
@@ -26,15 +26,18 @@ var _ = Describe("Shell", func() {
 		Expect(err).NotTo(HaveOccurred())
 		out = gbytes.NewBuffer()
 		player = &shell.LivePlayer{Out: out, In: stdinReadPipe}
-		username = os.Getenv("USER")
 		oldStdout = os.Stdout
+		oldEnv = os.Environ()
 	})
 
 	AfterEach(func() {
-		os.Setenv("USER", username)
 		stdinReadPipe.Close()
 		stdinWritePipe.Close()
 		os.Stdout = oldStdout
+		for _, variable := range oldEnv {
+			pair := strings.SplitN(variable, "=", 2)
+			os.Setenv(pair[0], pair[1])
+		}
 	})
 
 	Context("when user clicks enter", func() {
