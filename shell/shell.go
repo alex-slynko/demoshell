@@ -28,16 +28,23 @@ func (l *LivePlayer) Run(script []byte) error {
 	home := os.Getenv("HOME")
 	dir = strings.Replace(dir, home, "~", 1)
 	lines := bytes.Split(script, []byte("\n"))
+	showComments := true
 	var command []byte
 	for _, line := range lines {
 		if lineIsEmpty(line) {
 			continue
 		}
-		if bytes.HasPrefix(line, []byte("#doitlive")) {
+		if bytes.HasPrefix(line, []byte("#doitlive ")) {
+			doitliveCommand := bytes.TrimLeft(line[9:], " ")
+			if bytes.HasPrefix(doitliveCommand, []byte("commentecho:")) {
+				showComments = string(doitliveCommand) != "commentecho: false"
+			}
 		} else if bytes.HasPrefix(line, []byte("#!")) {
 		} else if bytes.HasPrefix(line, []byte("#")) {
-			l.Out.Write(bytes.TrimLeft(line, "#"))
-			l.Out.Write([]byte("\n"))
+			if showComments {
+				l.Out.Write(bytes.TrimLeft(line, "#"))
+				l.Out.Write([]byte("\n"))
+			}
 		} else {
 			if len(command) == 0 {
 				l.Out.Write([]byte(fmt.Sprintf("%s:%s$ %s\n", username, dir, line)))

@@ -165,8 +165,14 @@ echo "Hello"`))).To(Succeed())
 				Expect(string(out.Contents())).To(BeEmpty())
 			})
 
-			XIt("respects commentecho", func() {
+			It("respects commentecho", func() {
 				Expect(player.Run([]byte(`#doitlive commentecho: false
+# This is secret!`))).To(Succeed())
+				Expect(string(out.Contents())).To(BeEmpty())
+			})
+
+			It("respects commands with extra whitespaces", func() {
+				Expect(player.Run([]byte(`#doitlive    commentecho: false
 # This is secret!`))).To(Succeed())
 				Expect(string(out.Contents())).To(BeEmpty())
 			})
