@@ -114,6 +114,12 @@ World"`))
 			}()
 			Eventually(ch).Should(Receive())
 		})
+	})
+
+	Context("state", func() {
+		BeforeEach(func() {
+			stdinWritePipe.Write([]byte("\n"))
+		})
 
 		It("keeps environment variables that are exported in the script", func() {
 			stdinWritePipe.Write([]byte("\n"))
@@ -141,8 +147,11 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))
 			output := strings.Split(string(out.Contents()), "\n")
 			Expect(output).To(ContainElement("'Hello World'"))
 		})
+	})
 
+	Context("comments", func() {
 		It("does output comments on seprate lines", func() {
+			stdinWritePipe.Write([]byte("\n"))
 			err := player.Run([]byte(`#Test comment
 echo "Hello"`))
 			Expect(err).NotTo(HaveOccurred())
@@ -151,25 +160,32 @@ echo "Hello"`))
 			Expect(output).To(ContainElement("Hello"))
 		})
 
-	})
+		It("does not output shebang", func() {
+			err := player.Run([]byte(`#!echo "Hello"`))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(out.Contents())).To(BeEmpty())
+		})
 
-	It("does not output shebang", func() {
-		err := player.Run([]byte(`#!echo "Hello"`))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(out.Contents())).To(BeEmpty())
-	})
-
-	It("does output but do not run comments", func() {
-		err := player.Run([]byte(`#echo "Hello"`))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(out.Contents())).To(Equal(`echo "Hello"
+		It("does output but do not run comments", func() {
+			err := player.Run([]byte(`#echo "Hello"`))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(out.Contents())).To(Equal(`echo "Hello"
 `))
-	})
+		})
 
-	It("does not output doitlive comments", func() {
-		err := player.Run([]byte(`#doitlive speed=5`))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(out.Contents())).To(BeEmpty())
+		Context("doitlive", func() {
+			It("does not output doitlive comments", func() {
+				err := player.Run([]byte(`#doitlive speed=5`))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(out.Contents())).To(BeEmpty())
+			})
+
+			FIt("respects commentecho", func() {
+				Expect(player.Run([]byte(`#doitlive commentecho: false
+# This is secret!`))).To(Succeed())
+				Expect(string(out.Contents())).To(BeEmpty())
+			})
+		})
 	})
 
 	It("waits for enter to execute command", func() {
