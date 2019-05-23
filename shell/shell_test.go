@@ -113,28 +113,49 @@ World"`))).To(Succeed())
 			stdinWritePipe.Write([]byte("\n"))
 		})
 
-		It("keeps environment variables that are exported in the script", func() {
-			stdinWritePipe.Write([]byte("\n"))
-			Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="Hello World"
-echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
-			output := strings.Split(string(out.Contents()), "\n")
-			Expect(output).To(ContainElement("Hello World"))
-		})
+		Context("aliases", func() {
+			XIt("deletes aliases that are created in the script", func() {
 
-		It("keeps number environment variable", func() {
-			stdinWritePipe.Write([]byte("\n"))
-			Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE=1
-echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
-			output := strings.Split(string(out.Contents()), "\n")
-			Expect(output).To(ContainElement("1"))
-		})
+			})
 
-		It("keeps environment variable in single quotes", func() {
-			stdinWritePipe.Write([]byte("\n"))
-			Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello World'"
+			XIt("keeps aliases that are created in the script", func() {
+
+			})
+		})
+		Context("environment variables", func() {
+			It("keeps environment variables that are exported in the script", func() {
+				stdinWritePipe.Write([]byte("\n"))
+				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="Hello World"
 echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
-			output := strings.Split(string(out.Contents()), "\n")
-			Expect(output).To(ContainElement("'Hello World'"))
+				output := strings.Split(string(out.Contents()), "\n")
+				Expect(output).To(ContainElement("Hello World"))
+			})
+
+			It("keeps number environment variable", func() {
+				stdinWritePipe.Write([]byte("\n"))
+				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE=1
+echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
+				output := strings.Split(string(out.Contents()), "\n")
+				Expect(output).To(ContainElement("1"))
+			})
+
+			It("deletes environment variable that was deleted", func() {
+				stdinWritePipe.Write([]byte("\n"))
+				stdinWritePipe.Write([]byte("\n"))
+				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello World'"
+unset DEMOSHELL_KEEP_ENV_VARIABLE
+echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
+				output := strings.Split(string(out.Contents()), "\n")
+				Expect(output).NotTo(ContainElement("'Hello World'"))
+			})
+
+			It("keeps environment variable with single quotes", func() {
+				stdinWritePipe.Write([]byte("\n"))
+				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello 'World'"
+echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
+				output := strings.Split(string(out.Contents()), "\n")
+				Expect(output).To(ContainElement("'Hello 'World'"))
+			})
 		})
 	})
 

@@ -125,7 +125,16 @@ func (l *LivePlayer) updateEnvWithNew() {
 		}
 		fmt.Fprintln(os.Stderr, variable)
 	}
-	for _, variable := range variables[commandEnd+1:] {
+	newVariables := variables[commandEnd+1:]
+	for _, variable := range originalOnes {
+		if !includesElement(newVariables, variable) {
+			pair := strings.SplitN(variable, "=", 2)
+			if len(pair) == 2 {
+				os.Unsetenv(pair[0])
+			}
+		}
+	}
+	for _, variable := range newVariables {
 		if !includesElement(originalOnes, variable) {
 			pair := strings.SplitN(variable, "=", 2)
 			if len(pair) == 2 {
@@ -136,14 +145,13 @@ func (l *LivePlayer) updateEnvWithNew() {
 }
 
 func trimQuotes(quotedString string) string {
-	if strings.HasPrefix(quotedString, `''\''`) {
-		last := len(quotedString) - 4
-		return quotedString[4:last]
-	} else if strings.HasPrefix(quotedString, "'") {
+	result := quotedString
+	if strings.HasPrefix(quotedString, "'") {
 		last := len(quotedString) - 1
-		return quotedString[1:last]
+		result = quotedString[1:last]
 	}
-	return quotedString
+
+	return strings.ReplaceAll(result, `'\''`, "'")
 }
 
 func lineIsEmpty(line []byte) bool {
