@@ -31,21 +31,22 @@ func (l *LivePlayer) Run(script []byte) error {
 	showComments := true
 	var command []byte
 	for _, line := range lines {
-		if lineIsEmpty(line) {
+		switch {
+		case lineIsEmpty(line):
 			continue
-		}
-		if bytes.HasPrefix(line, []byte("#doitlive ")) {
+		case bytes.HasPrefix(line, []byte("#doitlive ")):
 			doitliveCommand := bytes.TrimLeft(line[9:], " ")
 			if bytes.HasPrefix(doitliveCommand, []byte("commentecho:")) {
 				showComments = string(doitliveCommand) != "commentecho: false"
 			}
-		} else if bytes.HasPrefix(line, []byte("#!")) {
-		} else if bytes.HasPrefix(line, []byte("#")) {
+		case bytes.HasPrefix(line, []byte("#!")):
+			continue
+		case bytes.HasPrefix(line, []byte("#")):
 			if showComments {
 				l.Out.Write(bytes.TrimLeft(line, "#"))
 				l.Out.Write([]byte("\n"))
 			}
-		} else {
+		default:
 			if len(command) == 0 {
 				l.Out.Write([]byte(fmt.Sprintf("%s:%s$ %s\n", username, dir, line)))
 			} else {
@@ -67,7 +68,7 @@ func (l *LivePlayer) Run(script []byte) error {
 (>&2 set -o posix; >&2 set)
 >&2 echo "END VARIABLES BEFORE"`), nil
 				})
-				bash.Source("", func(string) ([]byte, error) { return []byte(command), nil })
+				bash.Source("", func(string) ([]byte, error) { return command, nil })
 				bash.Source("", func(string) ([]byte, error) {
 					return []byte(`>&2 echo "START VARIABLES AFTER"
 (>&2 set -o posix; >&2 set)`), nil
