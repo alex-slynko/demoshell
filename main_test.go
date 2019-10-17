@@ -47,6 +47,17 @@ var _ = Describe("Main", func() {
 		Expect(session.Out).To(gbytes.Say(`demo.*\$ echo "Hello"`))
 	})
 
+	It("outputs stderr", func() {
+		command := exec.Command(pathToCLI, "fixtures/stderr.session")
+		inPipe, err := command.StdinPipe()
+		Expect(err).NotTo(HaveOccurred())
+		inPipe.Write([]byte("\n"))
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session).Should(gexec.Exit(0))
+		Expect(session.Err).To(gbytes.Say(`Hello`))
+	})
+
 	It("waits for user to type", func() {
 		command := exec.Command(pathToCLI, "fixtures/basic.session")
 		_, err := command.StdinPipe()

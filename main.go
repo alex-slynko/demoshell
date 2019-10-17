@@ -26,6 +26,6 @@ func main() {
 		fmt.Printf("Error when reading the file %v", err)
 		os.Exit(1)
 	}
-	player := &shell.LivePlayer{Out: os.Stdout, In: os.Stdin}
+	player := &shell.LivePlayer{Out: os.Stdout, In: os.Stdin, Err: os.Stderr}
 	player.Run(bytes)
 }

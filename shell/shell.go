@@ -13,6 +13,7 @@ import (
 
 type LivePlayer struct {
 	Out     io.Writer
+	Err     io.Writer
 	In      *os.File
 	stderrR *os.File
 	stderrW *os.File
@@ -74,7 +75,6 @@ func (l *LivePlayer) Run(script []byte) error {
 (>&2 set -o posix; >&2 set)`), nil
 				})
 				bash.Run("", []string{})
-
 				l.updateEnvWithNew()
 				command = []byte{}
 			}
@@ -92,6 +92,10 @@ func (l *LivePlayer) setupBasher() (*basher.Context, error) {
 	bash.Stdout = l.Out
 	bash.Stdin = l.In
 	r, w, err := os.Pipe()
+	if err != nil {
+		return bash, err
+	}
+	l.stderrW = w
 	l.stderrR = r
 	l.outC = make(chan string)
 	// copy the output in a separate goroutine so printing can't block indefinitely
@@ -109,25 +113,27 @@ func (l *LivePlayer) updateEnvWithNew() {
 	l.stderrR.Close()
 	out := <-l.outC
 
-	variables := strings.Split(out, "\n")
-	originalOnes := []string{}
+	stderrOutput := strings.Split(out, "\n")
 	var commandEnd int
-	for i, variable := range variables {
+	for i, variable := range stderrOutput {
 		if variable == "END VARIABLES BEFORE" {
 			commandEnd = i
 			break
 		}
-		originalOnes = append(originalOnes, variable)
 	}
-	for i, variable := range variables[commandEnd+1:] {
+	originalVariables := stderrOutput[:commandEnd-1]
+
+	prevCommandEnd := commandEnd + 1
+
+	for i, variable := range stderrOutput[commandEnd+1:] {
 		if variable == "START VARIABLES AFTER" {
-			commandEnd = i + commandEnd + 1
+			commandEnd = i + prevCommandEnd
 			break
 		}
-		fmt.Fprintln(os.Stderr, variable)
+		fmt.Fprintln(l.Err, variable)
 	}
-	newVariables := variables[commandEnd+1:]
-	for _, variable := range originalOnes {
+	newVariables := stderrOutput[commandEnd+1:]
+	for _, variable := range originalVariables {
 		if !includesElement(newVariables, variable) {
 			pair := strings.SplitN(variable, "=", 2)
 			if len(pair) == 2 {
@@ -136,7 +142,7 @@ func (l *LivePlayer) updateEnvWithNew() {
 		}
 	}
 	for _, variable := range newVariables {
-		if !includesElement(originalOnes, variable) {
+		if !includesElement(originalVariables, variable) {
 			pair := strings.SplitN(variable, "=", 2)
 			if len(pair) == 2 {
 				os.Setenv(pair[0], trimQuotes(pair[1]))

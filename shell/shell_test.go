@@ -18,14 +18,16 @@ var _ = Describe("Shell", func() {
 		oldStdout      *os.File
 		player         *shell.LivePlayer
 		oldEnv         []string
+		stderr         *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		var err error
+		stderr = gbytes.NewBuffer()
 		stdinReadPipe, stdinWritePipe, err = os.Pipe()
 		Expect(err).NotTo(HaveOccurred())
 		out = gbytes.NewBuffer()
-		player = &shell.LivePlayer{Out: out, In: stdinReadPipe}
+		player = &shell.LivePlayer{Out: out, In: stdinReadPipe, Err: stderr}
 		oldStdout = os.Stdout
 		oldEnv = os.Environ()
 	})
@@ -43,6 +45,17 @@ var _ = Describe("Shell", func() {
 	Context("when user clicks enter", func() {
 		BeforeEach(func() {
 			stdinWritePipe.Write([]byte("\n"))
+		})
+
+		It("outputs to stderr if required", func() {
+			Expect(player.Run([]byte(`time`))).To(Succeed())
+			Expect(stderr.Contents()).NotTo(BeEmpty())
+		})
+
+		It("redirects streams", func() {
+			Expect(player.Run([]byte(`>&2 echo Hello`))).To(Succeed())
+			Expect(strings.Split(string(out.Contents()), "\n")).NotTo(ContainElement("Hello"))
+			Expect(stderr.Contents()).NotTo(BeEmpty())
 		})
 
 		It("outputs contents of the file", func() {
@@ -111,20 +124,26 @@ World"`))).To(Succeed())
 	Context("state", func() {
 		BeforeEach(func() {
 			stdinWritePipe.Write([]byte("\n"))
+			stdinWritePipe.Write([]byte("\n"))
 		})
 
-		Context("aliases", func() {
-			XIt("deletes aliases that are created in the script", func() {
-
-			})
-
-			XIt("keeps aliases that are created in the script", func() {
-
-			})
-		})
 		Context("environment variables", func() {
+			It("works without environment variables", func() {
+				os.Clearenv()
+				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="Hello World"
+echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
+				output := strings.Split(string(out.Contents()), "\n")
+				Expect(output).To(ContainElement("Hello World"))
+			})
+
+			XIt("does not delete random environment variable", func() {
+				Expect(player.Run([]byte(`env
+&>2 env`))).To(Succeed())
+				output := strings.Split(string(out.Contents()), "\n")
+				errOutput := strings.Split(string(stderr.Contents()), "\n")
+				Expect(output).To(Equal(errOutput))
+			})
 			It("keeps environment variables that are exported in the script", func() {
-				stdinWritePipe.Write([]byte("\n"))
 				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="Hello World"
 echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 				output := strings.Split(string(out.Contents()), "\n")
@@ -132,7 +151,6 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 			})
 
 			It("keeps number environment variable", func() {
-				stdinWritePipe.Write([]byte("\n"))
 				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE=1
 echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 				output := strings.Split(string(out.Contents()), "\n")
@@ -140,7 +158,6 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 			})
 
 			It("deletes environment variable that was deleted", func() {
-				stdinWritePipe.Write([]byte("\n"))
 				stdinWritePipe.Write([]byte("\n"))
 				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello World'"
 unset DEMOSHELL_KEEP_ENV_VARIABLE
@@ -150,7 +167,6 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 			})
 
 			It("keeps environment variable with single quotes", func() {
-				stdinWritePipe.Write([]byte("\n"))
 				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello 'World'"
 echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 				output := strings.Split(string(out.Contents()), "\n")
