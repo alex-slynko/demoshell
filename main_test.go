@@ -3,23 +3,24 @@ package main_test
 import (
 	"os/exec"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Main", func() {
-	var pathToCLI string
-	BeforeSuite(func() {
-		var err error
-		pathToCLI, err = gexec.Build("github.com/alex-slynko/demoshell")
-		Expect(err).NotTo(HaveOccurred())
-	})
+var pathToCLI string
 
-	AfterSuite(func() {
-		gexec.CleanupBuildArtifacts()
-	})
+var _ = BeforeSuite(func() {
+	var err error
+	pathToCLI, err = gexec.Build("github.com/alex-slynko/demoshell")
+	Expect(err).NotTo(HaveOccurred())
+})
+var _ = AfterSuite(func() {
+	gexec.CleanupBuildArtifacts()
+})
+
+var _ = Describe("Main", func() {
 
 	It("requires an argument", func() {
 		command := exec.Command(pathToCLI)
