@@ -188,7 +188,10 @@ func includesElement(slices []string, element string) bool {
 
 func (l *LivePlayer) waitForEnter() {
 	if term.IsTerminal(int(l.In.Fd())) {
-		state, _ := term.MakeRaw(int(l.In.Fd()))
+		state, err := term.MakeRaw(int(l.In.Fd()))
+		if err != nil {
+			fmt.Fprintln(l.Err, "could not make terminal raw")
+		}
 		defer term.Restore(int(l.In.Fd()), state)
 	}
 	for {
