@@ -21,7 +21,7 @@ It runs the script line by line.
 
 ## Differences from doitlive
 
-Demoshell based on [doitlive programm](https://doitlive.readthedocs.io/en/stable/). It supports some of the tags provided by that application.
+Demoshell inspired by [doitlive programm](https://doitlive.readthedocs.io/en/stable/). It supports some of the tags provided by that application.
 
 Unlike the doitlive demoshell:
 
