@@ -1,2 +1,2 @@
 * @alex-slynko
-!.golanci.yml @offslinker 
+*.go @offslinker 
