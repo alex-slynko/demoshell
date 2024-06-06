@@ -1,4 +1,4 @@
 * @alex-slynko
 *.go @offslinker
-shell/shell.go
+fixtures/* @offslinker
 *.gif alex-slynko@github.com
