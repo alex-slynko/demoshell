@@ -20,6 +20,8 @@ type LivePlayer struct {
 	outC    chan string
 }
 
+var eol = []byte("\n")
+
 func (l *LivePlayer) Run(script []byte) error {
 	username := os.Getenv("DEMOUSER")
 	if username == "" {
@@ -28,7 +30,7 @@ func (l *LivePlayer) Run(script []byte) error {
 	dir, _ := os.Getwd()
 	home := os.Getenv("HOME")
 	dir = strings.Replace(dir, home, "~", 1)
-	lines := bytes.Split(script, []byte("\n"))
+	lines := bytes.Split(script, eol)
 	showComments := true
 	var command []byte
 	for _, line := range lines {
@@ -45,7 +47,7 @@ func (l *LivePlayer) Run(script []byte) error {
 		case bytes.HasPrefix(line, []byte("#")):
 			if showComments {
 				l.Out.Write(bytes.TrimLeft(line, "#"))
-				l.Out.Write([]byte("\n"))
+				l.Out.Write(eol)
 			}
 		default:
 			if len(command) == 0 {
@@ -56,7 +58,7 @@ func (l *LivePlayer) Run(script []byte) error {
 
 			l.waitForEnter()
 			command = append(command, line...)
-			command = append(command, []byte("\n")...)
+			command = append(command, eol...)
 
 			if !bytes.HasSuffix(line, []byte("\\")) {
 				bash, err := l.setupBasher()
