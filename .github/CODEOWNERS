@@ -1,3 +1,4 @@
 * @alex-slynko
 *.go @offslinker
+shell/shell.go
 *.gif alex-slynko@github.com
