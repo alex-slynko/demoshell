@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 
@@ -21,7 +20,7 @@ func main() {
 		fmt.Println("Interrupted")
 		os.Exit(10)
 	}()
-	bytes, err := ioutil.ReadFile(os.Args[1])
+	bytes, err := os.ReadFile(os.Args[1])
 	if err != nil {
 		fmt.Printf("Error when reading the file %v", err)
 		os.Exit(1)

@@ -1,7 +1,4 @@
 linters-settings:
-  govet:
-    # report about shadowed variables
-    check-shadowing: true
   gocyclo:
     # minimal code complexity to report
     min-complexity: 10
@@ -10,14 +7,28 @@ linters-settings:
     suggest-new: true
   lll:
     line-length: 512
+  cyclop:
+    # minimal code complexity to report
+    max-complexity: 15
 
 linters:
   enable-all: true
   disable:
+    - execinquery
+    - wrapcheck
+    - revive
     - funlen
     - wsl
     - gocyclo
     - errcheck
+    - gomnd
+    - paralleltest
+    - forbidigo
+    - mnd
+    - depguard
+    - gofumpt
+    - gochecknoglobals
+    - err113
 
 issues:
   exclude-use-default: true

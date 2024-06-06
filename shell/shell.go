@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	basher "github.com/progrium/go-basher"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 type LivePlayer struct {
@@ -80,6 +80,7 @@ func (l *LivePlayer) Run(script []byte) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -91,20 +92,22 @@ func (l *LivePlayer) setupBasher() (*basher.Context, error) {
 	bash.CopyEnv()
 	bash.Stdout = l.Out
 	bash.Stdin = l.In
-	r, w, err := os.Pipe()
+	readPipe, writePipe, err := os.Pipe()
 	if err != nil {
 		return bash, err
 	}
-	l.stderrW = w
-	l.stderrR = r
+	l.stderrW = writePipe
+	l.stderrR = readPipe
 	l.outC = make(chan string)
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		io.Copy(&buf, readPipe)
 		l.outC <- buf.String()
 	}()
-	bash.Stderr = w
+
+	bash.Stderr = writePipe
+
 	return bash, err
 }
 
@@ -118,6 +121,7 @@ func (l *LivePlayer) updateEnvWithNew() {
 	for i, variable := range stderrOutput {
 		if variable == "END VARIABLES BEFORE" {
 			commandEnd = i
+
 			break
 		}
 	}
@@ -128,6 +132,7 @@ func (l *LivePlayer) updateEnvWithNew() {
 	for i, variable := range stderrOutput[commandEnd+1:] {
 		if variable == "START VARIABLES AFTER" {
 			commandEnd = i + prevCommandEnd
+
 			break
 		}
 		fmt.Fprintln(l.Err, variable)
@@ -167,6 +172,7 @@ func lineIsEmpty(line []byte) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -176,13 +182,14 @@ func includesElement(slices []string, element string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func (l *LivePlayer) waitForEnter() {
-	if terminal.IsTerminal(int(l.In.Fd())) {
-		state, _ := terminal.MakeRaw(int(l.In.Fd()))
-		defer terminal.Restore(int(l.In.Fd()), state)
+	if term.IsTerminal(int(l.In.Fd())) {
+		state, _ := term.MakeRaw(int(l.In.Fd()))
+		defer term.Restore(int(l.In.Fd()), state)
 	}
 	for {
 		buf := make([]byte, 1)

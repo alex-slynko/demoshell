@@ -11,6 +11,7 @@ import (
 )
 
 var _ = Describe("Shell", func() {
+	var EOL = []byte{'\n'}
 	var (
 		stdinReadPipe  *os.File
 		stdinWritePipe *os.File
@@ -44,7 +45,7 @@ var _ = Describe("Shell", func() {
 
 	Context("when user clicks enter", func() {
 		BeforeEach(func() {
-			stdinWritePipe.Write([]byte("\n"))
+			stdinWritePipe.Write(EOL)
 		})
 
 		It("outputs to stderr if required", func() {
@@ -75,7 +76,7 @@ var _ = Describe("Shell", func() {
 		})
 
 		It("allows to run multiple commands", func() {
-			stdinWritePipe.Write([]byte("\n"))
+			stdinWritePipe.Write(EOL)
 			Expect(player.Run([]byte(`echo "Hello"
 echo "World"`))).To(Succeed())
 			output := strings.Split(string(out.Contents()), "\n")
@@ -86,7 +87,7 @@ echo "World"`))).To(Succeed())
 		})
 
 		It("does respect multiline commands", func() {
-			stdinWritePipe.Write([]byte("\n"))
+			stdinWritePipe.Write(EOL)
 			Expect(player.Run([]byte(`echo "Hello \
 World"`))).To(Succeed())
 			output := strings.Split(string(out.Contents()), "\n")
@@ -96,7 +97,7 @@ World"`))).To(Succeed())
 		})
 
 		It("adds > to the multiline commands", func() {
-			stdinWritePipe.Write([]byte("\n"))
+			stdinWritePipe.Write(EOL)
 			os.Setenv("DEMOUSER", "testUser")
 			Expect(player.Run([]byte(`echo "Hello \
 World"`))).To(Succeed())
@@ -111,20 +112,20 @@ World"`))).To(Succeed())
 		})
 
 		It("skips empty lines", func() {
-			ch := make(chan bool)
+			testChannel := make(chan bool)
 			go func() {
 				defer GinkgoRecover()
 				Expect(player.Run([]byte("\n\n\necho Hi"))).To(Succeed())
-				ch <- true
+				testChannel <- true
 			}()
-			Eventually(ch).Should(Receive())
+			Eventually(testChannel).Should(Receive())
 		})
 	})
 
 	Context("state", func() {
 		BeforeEach(func() {
-			stdinWritePipe.Write([]byte("\n"))
-			stdinWritePipe.Write([]byte("\n"))
+			stdinWritePipe.Write(EOL)
+			stdinWritePipe.Write(EOL)
 		})
 
 		Context("environment variables", func() {
@@ -158,7 +159,7 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 			})
 
 			It("deletes environment variable that was deleted", func() {
-				stdinWritePipe.Write([]byte("\n"))
+				stdinWritePipe.Write(EOL)
 				Expect(player.Run([]byte(`DEMOSHELL_KEEP_ENV_VARIABLE="'Hello World'"
 unset DEMOSHELL_KEEP_ENV_VARIABLE
 echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
@@ -177,7 +178,7 @@ echo "$DEMOSHELL_KEEP_ENV_VARIABLE"`))).To(Succeed())
 
 	Context("comments", func() {
 		It("does output comments on seprate lines", func() {
-			stdinWritePipe.Write([]byte("\n"))
+			stdinWritePipe.Write(EOL)
 			Expect(player.Run([]byte(`#Test comment
 echo "Hello"`))).To(Succeed())
 			output := strings.Split(string(out.Contents()), "\n")
@@ -217,14 +218,14 @@ echo "Hello"`))).To(Succeed())
 	})
 
 	It("waits for enter to execute command", func() {
-		ch := make(chan bool)
+		testChannel := make(chan bool)
 		go func() {
 			defer GinkgoRecover()
 			Expect(player.Run([]byte("echo Hi"))).To(Succeed())
-			ch <- true
+			testChannel <- true
 		}()
-		Consistently(ch).ShouldNot(Receive())
-		stdinWritePipe.Write([]byte("\n"))
-		Eventually(ch).Should(Receive())
+		Consistently(testChannel).ShouldNot(Receive())
+		stdinWritePipe.Write(EOL)
+		Eventually(testChannel).Should(Receive())
 	})
 })
