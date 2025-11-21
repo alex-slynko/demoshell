@@ -4,8 +4,8 @@ jobs:
   run-tests:
     runs-on: ubuntu
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           check-latest: true
       - run: go install github.com/onsi/ginkgo/v2/ginkgo@latest
